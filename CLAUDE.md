@@ -927,66 +927,66 @@ Daily login pop-up: shows on first app launch each day, displays day# + cycle re
 Legend: 🟦 todo · 🟧 in-progress · 🟩 done · 🟥 blocked · 💡 post-MVP idea
 
 ### Phase 1 — Foundation
-- 🟦 Init Next.js + TS + Tailwind + pnpm
-- 🟦 Repo + Vercel + Supabase provisioned
-- 🟦 Design tokens (palette, fonts, spacing)
-- 🟦 UI primitives (Button, Modal, Card, ProgressBar, Toast, Tabs, Input)
-- 🟦 Supabase schema + RLS + RPCs
-- 🟦 Auth screens (login/signup/guest)
-- 🟦 Profile creation (handle + display_name + photo)
-- 🟦 Layout shell + nav
-- 🟦 Home page 4 lang tiles
-- 🟦 Zustand stores + IndexedDB persist
-- 🟦 Local↔remote sync (pull, outbox, realtime)
-- 🟦 PWA manifest + service worker
+- 🟩 Init Next.js + TS + Tailwind + pnpm (manual scaffold; `create next-app` rejected due to pre-existing CLAUDE.md)
+- 🟩 Repo + Vercel + Supabase provisioned (see §14)
+- 🟩 Design tokens (palette, fonts, spacing) → `app/globals.css`
+- 🟩 UI primitives (Button, Modal, Card, ProgressBar, Toast, Tabs, Input) → `components/ui/`
+- 🟩 Supabase schema + RLS + RPCs → `supabase/migrations/0001_init.sql` (migration applied to remote, all 5 tables RLS-enabled)
+- 🟩 Auth screens (login/signup/guest) → `app/(auth)/{login,signup}/page.tsx` + `app/auth/callback/route.ts`
+- 🟩 Profile creation (handle + display_name) — photo upload via Supabase Storage (bucket `avatars` needs manual creation, see §15)
+- 🟩 Layout shell + nav → `app/(app)/layout.tsx`, `app/(app)/[lang]/layout.tsx`
+- 🟩 Home page 4 lang tiles → `app/(app)/home/page.tsx`
+- 🟩 Zustand stores + IndexedDB persist → `lib/stores/{authStore,langStore}.ts` (Map serialization fix in `partialize`/`onRehydrateStorage`)
+- 🟧 Local↔remote sync — pull on mount works via Supabase RLS; **outbox / realtime / last-write-wins NOT yet implemented**
+- 🟧 PWA manifest done (`public/manifest.json`); **service worker / next-pwa config NOT yet wired** (was scoped out of bootstrap)
 
 ### Phase 2 — Core Gameplay
-- 🟦 Vocab dataset (`lib/data/words.ts`, 440 × 4 langs, parsed from XML)
-- 🟦 Lesson tab (accordion, TTS, score chips, locked rows with padlock)
-- 🟦 Quiz tab (flip, weighted picker, 60/40 direction, self-report)
-- 🟦 Score engine (4 start, ±1/−2, color tiers)
-- 🟦 Streak module (16 stages, flame)
-- 🟦 Session coin counter (cumulative N)
-- 🟦 XP + rank engine (19 tiers, exp curve, promotion popup)
-- 🟦 Lang coin counter header
-- 🟦 Rank-XP progress bar
-- 🟦 Stats modal (Recharts winrate, per-session)
-- 🟦 Unlock token system (savable, 1/subcat, picker UI, locked-row UI)
-- 🟦 Focus mode
-- 🟦 Speed bonus +1 XP <3s
-- 🟦 Onboarding (3 dummy cards mandatory)
+- 🟩 Vocab dataset (`lib/data/words.ts`, 440 words × 4 langs; tests pass: 8/8 in `words.spec.ts`)
+- 🟩 Lesson tab (accordion, TTS, score chips, locked rows with padlock) → `app/(app)/[lang]/lesson/page.tsx`
+- 🟩 Quiz tab (flip, weighted picker, 60/40 direction, self-report) → `app/(app)/[lang]/quiz/page.tsx`
+- 🟩 Score engine (4 start, ±1/−2, color tiers) → `lib/game/score.ts`
+- 🟩 Streak module (16 stages, flame) → `lib/game/prob.ts::getStreakStage`
+- 🟩 Session coin counter (cumulative N) — handled in quiz page state
+- 🟩 XP + rank engine (19 tiers, exp curve, promotion popup) → `lib/game/rank.ts` + `components/game/RankUpModal.tsx`
+- 🟩 Lang coin counter header → `app/(app)/[lang]/layout.tsx`
+- 🟩 Rank-XP progress bar (same file)
+- 🟩 Stats modal (Recharts winrate, per-session) → `components/game/StatsModal.tsx`
+- 🟧 Unlock token system — backend in `lang_state.unlock_tokens`; **picker UI / spend RPC NOT yet built** (locked-row UI ✅)
+- 🟩 Focus mode (toggle in quiz page)
+- 🟩 Speed bonus +1 XP <3s (in `lib/game/prob.ts::computeXP`)
+- 🟩 Onboarding (3 dummy cards mandatory) → `components/game/OnboardingFlow.tsx`; persisted in `langStore.tutorialDone`
 
 ### Phase 3 — Economy & Retention
-- 🟦 Quests engine (3d + 5w, 7 types, instant update, scaled rewards)
-- 🟦 Quest reset cron (Edge Function)
-- 🟦 Shop UI (Skins/Thèmes sub-tabs)
-- 🟦 3 chest types (RPC RNG, drop tables, roulette anim, reveal)
-- 🟦 Inventory + equip
-- 🟦 Duplicate → shards
-- 🟦 Bonus chest (shards-only, booster odds ×2/×3/×5)
-- 🟦 30 skins + 30 themes (CSS-based variants per rarity, 1 Sec each)
-- 🟦 Daily login reward (cyclic ×2 pattern, popup, claim)
-- 🟦 Daily challenge card (5 weakest, 5× XP)
-- 🟦 Daily review mini-mode (lesson tab, 10 weakest, TTS, no rewards)
-- 🟦 Fragile-mastery decay (cron daily, 21d, −1 floor 5)
-- 🟦 Booster system (4 types, 24h timer, stacking)
+- 🟧 Quests engine — defs in `lib/game/quests.ts` (9 quest types); **event hooks / progress increment NOT yet wired**
+- 🟦 Quest reset cron (Edge Function) — pg_cron job declared in migration, **needs Edge Function for resetting `quest_state` rows**
+- 🟩 Shop UI (Skins/Thèmes sub-tabs) → `app/(app)/[lang]/shop/page.tsx`
+- 🟩 3 chest types (RPC RNG, drop tables, roulette anim, reveal) — RPC `open_chest` + `ChestOpenModal.tsx`
+- 🟩 Inventory + equip — RPC writes to `lang_state.inventory_*`
+- 🟩 Duplicate → shards — handled inside `open_chest` RPC
+- 🟩 Bonus chest (shards-only) — RPC `open_bonus_chest`
+- 🟦 30 skins + 30 themes — catalog descriptors NOT yet created (`lib/data/{skins,themes}.ts` missing)
+- 🟧 Daily login reward — RPC `claim_daily_login` ✅, `DailyLoginModal.tsx` ✅; **needs first-launch-of-day detection on client**
+- 🟦 Daily challenge card (5 weakest, 5× XP) — NOT yet implemented
+- 🟩 Daily review mini-mode → `components/game/DailyReviewModal.tsx`
+- 🟩 Fragile-mastery decay — pg_cron job in migration (00:05 UTC daily)
+- 🟧 Booster system — types defined in `lib/supabase/types.ts::Booster`, `BoosterMap`; **runtime application in XP/coin calcs NOT yet wired client-side**
 
 ### Phase 4 — Social & Profile
-- 🟦 Leaderboard (per lang, top 100 + window, on-mount refresh)
-- 🟦 Profile (photo upload, stats, showcase_lang picker, pinned achievements)
-- 🟦 Achievements engine + hooks + pop-up notifications
-- 🟦 Single-session lock + modal
+- 🟩 Leaderboard → `app/(app)/leaderboard/page.tsx` + RPC `refresh_leaderboard` + materialized view
+- 🟩 Profile (photo upload, stats, showcase_lang picker) → `app/(app)/profile/page.tsx`; **pinned achievements UI present but achievement-unlock engine NOT yet built**
+- 🟦 Achievements engine + hooks + pop-up notifications — NOT yet implemented (table exists, no logic)
+- 🟦 Single-session lock — column `profiles.active_session_id` exists + RPC `set_active_session` ✅; **client realtime listener / conflict modal NOT yet built**
 
 ### Phase 5 — Polish & Assets
-- 🟦 19 rank crest SVGs
-- 🟦 4 coin variants (per lang tint)
-- 🟦 3 chest assets + open VFX
-- 🟦 9 category icons
-- 🟦 16 flame stage assets
+- 🟦 19 rank crest SVGs (currently colored text badges via `RANK_COLORS`)
+- 🟦 4 coin variants (per lang tint) — currently emoji 🪙
+- 🟦 3 chest assets + open VFX — currently emoji 🎁
+- 🟦 9 category icons — currently emoji from spec
+- 🟦 16 flame stage assets — currently emoji 🔥
 - 🟦 Achievement badges
-- 🟦 SFX library (flip, right, wrong, coin, chest roulette, rank-up, quest claim, daily reward)
-- 🟦 Confetti + rank-up popup
-- 🟦 Milestone anims (10/25/50/100)
+- 🟦 SFX library (flip, right, wrong, coin, chest roulette, rank-up, quest claim, daily reward) — Howler installed, no sound files
+- 🟩 Confetti + rank-up popup → `RankUpModal.tsx` (30 div-based confetti)
+- 🟧 Milestone anims (10/25/50/100) — milestone detect ✅ in quiz page; **dedicated anim component NOT yet built**
 - 🟦 Reduced-motion + a11y pass
 - 🟦 Mobile QA (iOS Safari, Android Chrome)
 - 🟦 Lighthouse > 90 all categories
@@ -1007,83 +1007,72 @@ Legend: 🟦 todo · 🟧 in-progress · 🟩 done · 🟥 blocked · 💡 post-
 
 > Each step = ≥1 commit. Mark 🟧 start, 🟩 merge. Update §11 every step.
 
-### S1 — Bootstrap
-```bash
-pnpm create next-app vocup_site --ts --tailwind --app --eslint --src-dir=false --import-alias='@/*'
-cd vocup_site
-pnpm add zustand framer-motion gsap howler @supabase/supabase-js @supabase/ssr react-hook-form zod idb-keyval recharts lucide-react next-pwa
-pnpm add -D @types/howler vitest @playwright/test
-```
-Create Supabase project → `.env.local`. Commit `chore: bootstrap`.
+### S1 — Bootstrap 🟩 (commit `10d2aec`)
+Manual scaffold (create-next-app refused due to pre-existing `CLAUDE.md`). All deps installed via `pnpm` (binary lives at `~/.npm-global/node_modules/.bin/pnpm`). Supabase project provisioned. `.env.local` filled. Repo pushed to `https://github.com/nefry5/VocUp` and Vercel project linked. See §14 for full IDs.
 
-### S2 — Tokens + UI primitives
-`app/globals.css` CSS vars. `components/ui/`: Button, Card, Modal, ProgressBar, Toast, Tabs, Input. Commit `feat(ui): tokens + primitives`.
+Additional commits since bootstrap:
+- `90950e3` — fix(db): declare v_lang + use FOREACH in `claim_daily_login` (Postgres syntax fix)
+- `389727e` — Next.js 15.1.8 → 15.1.11 (CVE-2025-66478 patch, auto-merged from Vercel security bot branch `vercel/react-server-components-cve-vu-fs5644`)
 
-### S3 — Supabase schema
-`supabase/migrations/0001_init.sql` per §3 + RLS + RPCs (`award_xp`, `spend_coins`, `open_chest`, `open_bonus_chest`, `claim_quest`, `claim_daily_login`, `set_active_session`). `supabase db push`. Commit `feat(db): schema + rls + rpcs`.
+### S2 — Tokens + UI primitives 🟩 (in `10d2aec`)
+Done. `app/globals.css` CSS vars + flip utilities. `components/ui/{Button,Card,Modal,ProgressBar,Toast,Tabs,Input}.tsx`.
 
-### S4 — Auth
-`app/(auth)/login` + `signup`. Google + email/pwd + guest. Handle uniqueness RPC. Email verification gate. Commit `feat(auth): login/signup/guest`.
+### S3 — Supabase schema 🟩 (in `10d2aec`, fixed in `90950e3`)
+Done. `supabase/migrations/0001_init.sql` applied to remote. 5 tables + materialized view, RLS on all, 8 RPCs (`award_xp`, `spend_coins`, `open_chest`, `open_bonus_chest`, `claim_quest`, `claim_daily_login`, `set_active_session`, `refresh_leaderboard`). pg_cron jobs for decay + leaderboard refresh.
 
-### S5 — Stores + sync
-`lib/stores/lang.ts` per-lang slice. Persist IndexedDB. `lib/sync/`: pull on mount, push on mutation, outbox, last-write-wins. Realtime subscribe. Commit `feat(state): stores + sync`.
+### S4 — Auth 🟩 (in `10d2aec`)
+Done for email/password + guest. Google OAuth provider NOT yet enabled in Supabase dashboard (skip until needed).
 
-### S6 — Vocab data
-Parse XML in §5 → `lib/data/words.ts` typed entries. Test count=440 per lang, per cat counts match. Commit `feat(data): 440-word dataset`.
+### S5 — Stores + sync 🟧
+Stores ✅ (`lib/stores/{authStore,langStore}.ts` with IndexedDB persist via Zustand). **Sync layer missing**: no `lib/sync/` directory, no outbox, no realtime subscribe, no last-write-wins. Writes currently go directly to Supabase from page handlers. Build this next when you wire mutations through a sync queue.
 
-### S7 — Home
-4 lang tiles. State from store. Rank crest placeholder + words-mastered bar. Profile + LB btns. Commit `feat(home): lang tiles`.
+### S6 — Vocab data 🟩 (in `10d2aec`)
+Done. `lib/data/words.ts` (440 entries). Tests `lib/data/words.spec.ts` (8/8 passing).
 
-### S8 — Lang layout + header
-`app/(app)/[lang]/layout.tsx`: header (crest, rank-XP bar, coin counter). Tabs. Commit `feat(lang): layout + header`.
+### S7 — Home 🟩 (in `10d2aec`)
 
-### S9 — Lesson
-Accordion. Locked row with 🔒 + word count. Speaker TTS btn. Score chip. Btn "Révision du jour". Commit `feat(lesson): accordion + tts + review`.
+### S8 — Lang layout + header 🟩 (in `10d2aec`)
 
-### S10 — Quiz core
-Card flip. Weighted picker (`lib/game/prob.ts`). 60/40 direction. Self-report. Score update + XP + streak + session coins + speed bonus. Commit `feat(quiz): core loop`.
+### S9 — Lesson 🟩 (in `10d2aec`)
 
-### S11 — Rank engine
-`lib/game/rank.ts`: thresholds, current tier, progress%, promotion detect. Immediate popup + confetti + token grant. Commit `feat(rank): 19-tier engine`.
+### S10 — Quiz core 🟩 (in `10d2aec`)
 
-### S12 — Subcat unlock
-Token counter. Picker modal. Spend → update `unlocked_subcats`. Commit `feat(unlock): tokens`.
+### S11 — Rank engine 🟩 (in `10d2aec`)
 
-### S13 — Stats + focus
-Recharts winrate per-session. Focus-mode toggle. Commit `feat(quiz): stats + focus`.
+### S12 — Subcat unlock 🟦 — NEXT
+Token counter UI + picker modal NOT yet built. Spend RPC also missing (need to add `spend_unlock_token(p_lang, p_subcat_id)` to migration 0002). UI to be added inside lesson page (locked subcat row → "Débloquer (1 token)" button).
 
-### S14 — Onboarding
-3-card mandatory tutorial with dummy placeholders + explicit click tooltips. Persist flag. Commit `feat(onboarding): guided first quiz`.
+### S13 — Stats + focus 🟩 (in `10d2aec`)
 
-### S15 — Quests
-8 quest types defs. State per period. Event hooks. Claim RPC. Edge fn cron resets. Commit `feat(quests): daily + weekly`.
+### S14 — Onboarding 🟩 (in `10d2aec`)
 
-### S16 — Shop + chests
-3 chest cards + drop-table modal. `open_chest` RPC. GSAP roulette + reveal. Inventory + equip. Dup→shards. Bonus chest tile + `open_bonus_chest`. Booster runtime. Commit `feat(shop): chests + boosters`.
+### S15 — Quests 🟧
+Definitions ✅ (`lib/game/quests.ts`). RPC `claim_quest` ✅. **Missing**: event hooks (call after each card answered to increment `quest_state.progress`), quest tab integration with claim button, Edge Function cron for resets (declared in pg_cron but resets are no-ops without periodic row writes).
 
-### S17 — Cosmetics catalog
-30 skins + 30 themes JSON descriptors. CSS var swap + class apply. Rarity layered FX. Commit `feat(cosmetics): catalog`.
+### S16 — Shop + chests 🟩 (in `10d2aec`)
+RPC + UI + modal all in place. GSAP roulette is currently simple Framer rotation — upgrade to real GSAP timeline if desired.
 
-### S18 — Daily systems
-Daily login popup + RPC (cyclic). Daily challenge card per lang. Decay cron. Booster stacking. Commit `feat(daily): login + challenge + decay`.
+### S17 — Cosmetics catalog 🟦
+Missing files: `lib/data/skins.ts` + `lib/data/themes.ts` with 30 items each. Currently `inventory_skins[]` references item_ids that don't resolve to visuals. Define catalog → wire CSS var swap in `[lang]/layout.tsx`.
 
-### S19 — Profile + achievements
-Profile page. Photo upload (compress 512×512). Showcase_lang picker. Stats. Achievements engine + hooks. Pinned 3. Pop-up notif. Commit `feat(profile): page + achievements`.
+### S18 — Daily systems 🟧
+Login popup `DailyLoginModal.tsx` ✅. RPC `claim_daily_login` ✅. **Missing**: first-launch-of-day client detection (currently never fires), daily challenge card (no UI/logic), client-side booster runtime application in `lib/game/prob.ts::computeXP` (params are accepted but never set).
 
-### S20 — Leaderboard
-Per-lang query top 100 + window. `(moi)` marker. On-mount refresh. Commit `feat(leaderboard)`.
+### S19 — Profile + achievements 🟧
+Profile page ✅ (incl. photo upload to Supabase Storage — note: bucket `avatars` must be manually created with public read policy; see §15). **Missing**: achievements engine — no event hooks, no `unlock_achievement` RPC, no pop-up notifications. Pinned-achievements grid renders but always empty.
 
-### S21 — Single-session lock
-Realtime listener on `profiles.active_session_id`. Block UI on conflict. Commit `feat(auth): single-session`.
+### S20 — Leaderboard 🟩 (in `10d2aec`)
 
-### S22 — Assets pass
-19 ranks, 4 coins, 3 chests, 9 cat icons, 16 flames, badges. SFX sprite + Howler. Commit `feat(assets): full pack`.
+### S21 — Single-session lock 🟦
+RPC ✅, column ✅. **Missing**: client subscription to `profiles.active_session_id` via Supabase Realtime + conflict modal.
 
-### S23 — PWA + polish
-Manifest, SW, install prompt. Reduced-motion. A11y audit. Lighthouse > 90. Commit `feat(pwa): polish`.
+### S22 — Assets pass 🟦
+All visual assets currently emoji or text. No SFX sound files.
 
-### S24 — QA + ship
-Mobile real devices (iOS Safari, Android Chrome). Cross-browser. LB load test. Final deploy. Commit `chore: v1.0`.
+### S23 — PWA + polish 🟦
+`public/manifest.json` ✅. `next-pwa` installed but not configured in `next.config.ts`. Service worker not generated.
+
+### S24 — QA + ship 🟦
 
 ---
 
@@ -1099,4 +1088,144 @@ Mobile real devices (iOS Safari, Android Chrome). Cross-browser. LB load test. F
 
 ---
 
-*End. Update STATUS DASHBOARD every step. Spec frozen unless explicit change request.*
+## 14 · INFRASTRUCTURE STATE (live as of 2026-05-25)
+
+### 14.1 GitHub
+- **Repo:** `https://github.com/nefry5/VocUp` (public)
+- **Owner:** `nefry5` (account email `vin100rom1@gmail.com`)
+- **Default branch:** `main`
+- **Push auth:** Personal Access Token cached in macOS keychain (token already rotated should be assumed leaked — generate fresh PAT from https://github.com/settings/tokens when next push is needed, OR install `gh` CLI: `brew install gh && gh auth login`)
+- **Active branches at HEAD:**
+  - `main` → `389727e` (production)
+  - `vercel/react-server-components-cve-vu-fs5644` → already merged into `main` via fast-forward, branch can be deleted
+
+### 14.2 Supabase
+- **Project ID / Ref:** `vjgllnqmjauxanfrwfzj`
+- **Organization ID:** `tvvnlniwcxnasdzrkazz`
+- **URL:** `https://vjgllnqmjauxanfrwfzj.supabase.co`
+- **Region:** `eu-west-3` (Paris)
+- **Postgres:** 17.6.1.121
+- **Status:** `ACTIVE_HEALTHY`
+- **Created:** 2026-05-24
+- **Migrations applied:** `0001_init` (single migration covers entire schema + RPCs + cron jobs)
+- **Tables (all RLS-enabled, 0 rows currently):** `profiles`, `lang_state`, `word_scores`, `quest_state`, `achievements`
+- **Materialized view:** `leaderboard_view`
+- **RPCs:** `award_xp`, `spend_coins`, `open_chest`, `open_bonus_chest`, `claim_quest`, `claim_daily_login`, `set_active_session`, `refresh_leaderboard`
+- **Auth providers enabled:** Email/password (with email confirmation). Google OAuth NOT yet configured.
+- **Storage buckets:** **NONE created yet** — must create `avatars` bucket manually (public read) before profile photo upload works.
+- **Local link:** `supabase/.temp/project-ref` (CLI-linked via `supabase link --project-ref vjgllnqmjauxanfrwfzj`). DB password stored in macOS keychain. To push schema changes: `supabase db push`.
+
+### 14.3 Vercel
+- **Team:** `nefrychonchs-projects` (slug)
+- **Team ID:** `team_XsI6YDbrRp6IYYIPGtfQTdmy`
+- **Project name:** `vocup`
+- **Project ID:** `prj_lBk0xoEmDnd61CwYcYpiuTkpU0Oh`
+- **Production URL:** `https://vocup-app.vercel.app`
+- **Branch alias:** `vocup-git-main-nefrychonchs-projects.vercel.app`
+- **Latest production deploy:** `dpl_7xqAY7m3UCZw4QZN3hQnrUQaRx3G` (state READY, commit `389727e`)
+- **Framework:** Next.js (auto-detected), Node lambda runtime
+- **Auto-deploy:** On push to `main` ✅
+- **Inspector URL:** `https://vercel.com/nefrychonchs-projects/vocup`
+
+### 14.4 Environment variables
+
+**Set in BOTH `.env.local` (local dev) AND Vercel dashboard (production):**
+
+| Name | Source | Sensitive |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://vjgllnqmjauxanfrwfzj.supabase.co` | No |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Settings → API → "anon public" | No (RLS protects) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Settings → API → "service_role" (Reveal button) | **YES — never paste in chat, never commit** |
+
+`.env.local` is gitignored. Service role key currently lives only in: (a) Supabase dashboard, (b) Vercel project env vars, (c) local `.env.local`. If exposed anywhere else, rotate immediately via Supabase Settings → API → "Reset service_role".
+
+### 14.5 Supabase Auth → URL Configuration (CONFIGURE THIS)
+Set in Supabase Dashboard → Authentication → URL Configuration:
+- **Site URL:** `https://vocup-app.vercel.app`
+- **Redirect URLs (allow-list):**
+  - `https://vocup-app.vercel.app/auth/callback`
+  - `https://vocup-app.vercel.app/**`
+  - `http://localhost:3000/auth/callback`
+  - `http://localhost:3000/**`
+
+### 14.6 Local dev
+```bash
+# inside vocup_site/
+~/.npm-global/node_modules/.bin/pnpm dev    # http://localhost:3000
+~/.npm-global/node_modules/.bin/pnpm exec next build   # production build sanity check
+~/.npm-global/node_modules/.bin/pnpm exec vitest run   # 8/8 vocab tests
+```
+
+User's pnpm is not on PATH — always use the full path above. Or symlink it once: `ln -s ~/.npm-global/node_modules/.bin/pnpm /usr/local/bin/pnpm`.
+
+---
+
+## 15 · KNOWN ISSUES (address before public launch)
+
+### 15.1 Supabase advisors (from `get_advisors` security lint, 2026-05-25)
+
+| # | Severity | Issue | Fix |
+|---|---|---|---|
+| 1 | WARN | `function_search_path_mutable` on all 8 RPCs | Add `SET search_path = ''` to each `CREATE FUNCTION` body and prefix all table references with `public.` (most already prefixed). Bundle into migration `0002_harden_rpcs.sql`. |
+| 2 | WARN | `materialized_view_in_api` on `leaderboard_view` | Either move view to a private schema and create a wrapper SECURITY DEFINER function, OR revoke `SELECT` from `anon`/`authenticated` and only access via `refresh_leaderboard` RPC. |
+| 3 | WARN | `anon_security_definer_function_executable` + `authenticated_security_definer_function_executable` on all 8 RPCs | **Expected by design** — game RPCs must be SECURITY DEFINER to bypass RLS for controlled mutations. Each RPC starts with `IF auth.uid() IS NULL THEN RAISE EXCEPTION` so anon cannot actually mutate. Safe to ignore; document acceptance in `0002_harden_rpcs.sql` comments. |
+| 4 | WARN | `auth_leaked_password_protection` disabled | Supabase Dashboard → Authentication → Policies → toggle "Leaked Password Protection" ON (uses HaveIBeenPwned). |
+
+### 15.2 Missing infra prerequisites
+- **Avatar bucket:** Supabase Storage → create bucket named `avatars`, public read, authenticated insert/update where `name LIKE auth.uid() || '/%'`. Profile photo upload (`app/(app)/profile/page.tsx` line ~54) silently fails until this exists.
+- **Google OAuth:** if you want the "Continue with Google" button on login to work, configure provider in Supabase Dashboard → Authentication → Providers → Google (need Google Cloud OAuth client ID + secret). Until then, login page's Google button errors silently.
+- **`favicon.ico`:** none in `public/`. Requests for `/favicon.ico` get caught by `[lang]` dynamic route and redirect to `/favicon.ico/lesson`. Cosmetic only. Drop a `favicon.ico` into `public/` to fix.
+
+### 15.3 Code-level TODOs
+- `lib/supabase/types.ts` uses `Database = any` to dodge Supabase generic complexity. Fine for now, but lose type safety on `.from()` calls. Regenerate types with `supabase gen types typescript --linked > lib/supabase/db.types.ts` when convenient.
+- `react-hooks/exhaustive-deps` warnings in `app/(app)/[lang]/quiz/page.tsx:59` and `components/game/DailyReviewModal.tsx:37` — non-blocking; revisit when polishing.
+- No `console.log` rule is set to **error** in `.eslintrc.json` — debugging requires using `console.warn`/`console.error` or temporarily disabling per-line.
+- `pnpm install` shows `next-pwa` peer dep mismatch (next-pwa expects Next 13/14, we run 15). Not blocking but PWA wiring (S23) will likely need a workaround or an updated alternative (e.g., `@serwist/next`).
+
+### 15.4 Open security tasks
+- Rate-limit RPCs (60 req/min/user per spec §8) — NOT yet implemented. Need Supabase Edge Function gate OR Postgres `pg_rate_limit`.
+- Single-session lock client-side — see S21.
+- Email verification — Supabase setting ON by default; verify in dashboard before launch.
+
+---
+
+## 16 · RESUMING IN A NEW CHAT (for the next AI)
+
+### 16.1 What you have
+- **MCP tools connected:** Vercel (`mcp__046bf9d6...`) + Supabase (`mcp__61af4e80...`). You can list projects, deploy, apply migrations, run SQL, fetch logs without asking the user to copy/paste from dashboards.
+- **Skills enabled.** Use freely.
+- **Git auth:** macOS keychain holds GitHub credentials. `git push` should "just work" from the project directory. If it fails with 401, the cached token has been rotated — ask the user for a new one or get them to install `gh` CLI.
+- **Supabase CLI linked** to project `vjgllnqmjauxanfrwfzj`. `supabase db push` applies new migrations.
+- **User is non-technical.** Walk through any required dashboard clicks in numbered steps. Never assume they know CLI conventions. Always specify the full pnpm path.
+
+### 16.2 First things to verify on a fresh session
+```bash
+# from vocup_site/
+git status                                                       # working tree clean?
+git log --oneline -5                                             # what's the HEAD commit?
+~/.npm-global/node_modules/.bin/pnpm exec next build             # does it still build?
+~/.npm-global/node_modules/.bin/pnpm exec vitest run             # do tests pass?
+```
+Then via MCP:
+- `mcp__61af4e80...__list_migrations` — confirm 0001_init applied
+- `mcp__61af4e80...__get_advisors` (type: security) — fresh warning list
+- `mcp__046bf9d6...__list_deployments` (project `prj_lBk0xoEmDnd61CwYcYpiuTkpU0Oh`, team `team_XsI6YDbrRp6IYYIPGtfQTdmy`) — last deploy state
+
+### 16.3 Recommended next sequence
+1. **Harden DB advisors** → write `supabase/migrations/0002_harden_rpcs.sql`, apply via MCP `apply_migration`, re-check `get_advisors`.
+2. **Create `avatars` Storage bucket** — via MCP SQL or dashboard.
+3. **Sync layer (S5 finish)** — outbox + last-write-wins. Required before any feature that mutates `lang_state` outside the existing RPCs.
+4. **Subcat unlock (S12)** — UI + new RPC `spend_unlock_token`.
+5. **Achievements engine (S19)** — table exists, need event hooks + unlock RPC.
+6. **PWA wiring (S23)** — likely switch from `next-pwa` to `@serwist/next` (next-pwa is Next 13/14 only).
+7. **Asset pass (S22)** — replace all emoji with proper SVG/SFX. Source from licence-free packs (Lucide, Heroicons, OpenGameArt).
+
+### 16.4 Conventions (also see §13)
+- Caveman mode is the user's preference for chat ("stop caveman" / "normal mode" toggles). Code, commits, security messages: write normal English.
+- Always commit with `Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>` trailer.
+- Never push to `main` with `--force`. Never bypass hooks with `--no-verify` unless user explicitly asks.
+- Vercel auto-deploys `main`. Vercel security bot may open PRs on branches like `vercel/*-cve-*` — diff-check before merging.
+
+---
+
+*End. Update STATUS DASHBOARD (§11), ACTION PLAN (§12), and INFRASTRUCTURE STATE (§14) on every meaningful change. Spec sections §1–§10, §13 frozen unless explicit change request.*
