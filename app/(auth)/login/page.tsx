@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -26,6 +26,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState(false)
 
+  // Redirect if already logged in
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) router.replace('/home')
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
@@ -39,7 +47,7 @@ export default function LoginPage() {
     })
     setLoading(false)
     if (err) {
-      setError(err.message)
+      setError('Email ou mot de passe incorrect')
       return
     }
     router.push('/home')
@@ -59,12 +67,27 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-6">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background glow */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full opacity-10"
+          style={{ background: 'radial-gradient(circle, var(--action), transparent 70%)' }} />
+        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full opacity-8"
+          style={{ background: 'radial-gradient(circle, var(--reward), transparent 70%)' }} />
+      </div>
+
+      <div className="w-full max-w-sm space-y-6 relative">
         {/* Logo */}
-        <div className="text-center">
-          <h1 className="text-4xl font-black text-action tracking-tight">VocUp</h1>
-          <p className="text-[var(--text-muted)] mt-1 text-sm">Apprends le vocabulaire</p>
+        <div className="text-center space-y-2">
+          <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-3"
+            style={{ background: 'linear-gradient(135deg, var(--action), var(--reward))' }}>
+            <span className="text-3xl">🎓</span>
+          </div>
+          <h1 className="text-4xl font-black tracking-tight"
+            style={{ background: 'linear-gradient(135deg, var(--action), var(--reward))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            VocUp
+          </h1>
+          <p className="text-[var(--text-muted)] text-sm">Maîtrise le vocabulaire en jouant</p>
         </div>
 
         {/* Google OAuth */}
@@ -106,7 +129,11 @@ export default function LoginPage() {
             error={errors.password?.message}
             {...register('password')}
           />
-          {error && <p className="text-sm text-score-red">{error}</p>}
+          {error && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-score-red/10 border border-score-red/20">
+              <span className="text-sm text-score-red">{error}</span>
+            </div>
+          )}
           <Button type="submit" fullWidth size="lg" loading={loading}>
             Se connecter
           </Button>
@@ -114,15 +141,20 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-[var(--text-muted)]">
           Pas de compte ?{' '}
-          <Link href="/signup" className="text-action hover:underline font-medium">
+          <Link href="/signup" className="text-action hover:underline font-semibold">
             Créer un compte
           </Link>
         </p>
 
         {/* Guest */}
-        <Button variant="ghost" fullWidth onClick={continueAsGuest}>
-          Continuer en invité
-        </Button>
+        <div className="pt-2 border-t border-[var(--border)]">
+          <Button variant="ghost" fullWidth onClick={continueAsGuest} className="text-[var(--text-dim)]">
+            Continuer en invité
+          </Button>
+          <p className="text-center text-xs text-[var(--text-dim)] mt-2">
+            Progression non sauvegardée · Pas de classement
+          </p>
+        </div>
       </div>
     </div>
   )
