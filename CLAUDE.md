@@ -1094,9 +1094,9 @@ All visual assets currently emoji or text. No SFX sound files.
 - **Repo:** `https://github.com/nefry5/VocUp` (public)
 - **Owner:** `nefry5` (account email `vin100rom1@gmail.com`)
 - **Default branch:** `main`
-- **Push auth:** Personal Access Token cached in macOS keychain (token already rotated should be assumed leaked — generate fresh PAT from https://github.com/settings/tokens when next push is needed, OR install `gh` CLI: `brew install gh && gh auth login`)
+- **Push auth:** `gh` CLI installed and authenticated via web OAuth. `git push` works without typing tokens. (Old PAT `ghp_KvTsBb...` was rotated/deleted from GitHub settings after being leaked in chat.)
 - **Active branches at HEAD:**
-  - `main` → `389727e` (production)
+  - `main` → `be758ef` (production; see §14.7 for full log)
   - `vercel/react-server-components-cve-vu-fs5644` → already merged into `main` via fast-forward, branch can be deleted
 
 ### 14.2 Supabase
@@ -1107,12 +1107,14 @@ All visual assets currently emoji or text. No SFX sound files.
 - **Postgres:** 17.6.1.121
 - **Status:** `ACTIVE_HEALTHY`
 - **Created:** 2026-05-24
-- **Migrations applied:** `0001_init` (single migration covers entire schema + RPCs + cron jobs)
+- **Migrations applied:**
+  - `0001_init` — schema + RLS + 8 RPCs + pg_cron jobs
+  - `0002_avatars_storage_bucket` — avatars bucket + per-user write policies
 - **Tables (all RLS-enabled, 0 rows currently):** `profiles`, `lang_state`, `word_scores`, `quest_state`, `achievements`
 - **Materialized view:** `leaderboard_view`
 - **RPCs:** `award_xp`, `spend_coins`, `open_chest`, `open_bonus_chest`, `claim_quest`, `claim_daily_login`, `set_active_session`, `refresh_leaderboard`
 - **Auth providers enabled:** Email/password (with email confirmation). Google OAuth NOT yet configured.
-- **Storage buckets:** **NONE created yet** — must create `avatars` bucket manually (public read) before profile photo upload works.
+- **Storage buckets:** `avatars` ✅ (public read, 2MB cap, image MIME only, per-user folder isolation on writes via `(storage.foldername(name))[1] = auth.uid()::text`).
 - **Local link:** `supabase/.temp/project-ref` (CLI-linked via `supabase link --project-ref vjgllnqmjauxanfrwfzj`). DB password stored in macOS keychain. To push schema changes: `supabase db push`.
 
 ### 14.3 Vercel
@@ -1139,8 +1141,8 @@ All visual assets currently emoji or text. No SFX sound files.
 
 `.env.local` is gitignored. Service role key currently lives only in: (a) Supabase dashboard, (b) Vercel project env vars, (c) local `.env.local`. If exposed anywhere else, rotate immediately via Supabase Settings → API → "Reset service_role".
 
-### 14.5 Supabase Auth → URL Configuration (CONFIGURE THIS)
-Set in Supabase Dashboard → Authentication → URL Configuration:
+### 14.5 Supabase Auth → URL Configuration ✅ DONE
+Already set in Supabase Dashboard → Authentication → URL Configuration:
 - **Site URL:** `https://vocup-app.vercel.app`
 - **Redirect URLs (allow-list):**
   - `https://vocup-app.vercel.app/auth/callback`
@@ -1158,6 +1160,13 @@ Set in Supabase Dashboard → Authentication → URL Configuration:
 
 User's pnpm is not on PATH — always use the full path above. Or symlink it once: `ln -s ~/.npm-global/node_modules/.bin/pnpm /usr/local/bin/pnpm`.
 
+### 14.7 Commit log (newest first)
+- `be758ef` — feat(storage): avatars bucket with per-user write isolation
+- `daba09d` — docs(claude): update status, action plan, add infra/known-issues/resume sections
+- `389727e` — Fix React Server Components CVE vulnerabilities (Next 15.1.8 → 15.1.11, auto-merged from Vercel security bot)
+- `90950e3` — fix(db): declare v_lang and use FOREACH in claim_daily_login
+- `10d2aec` — chore: bootstrap VocUp v1 (initial 57-file scaffold)
+
 ---
 
 ## 15 · KNOWN ISSUES (address before public launch)
@@ -1172,7 +1181,7 @@ User's pnpm is not on PATH — always use the full path above. Or symlink it onc
 | 4 | WARN | `auth_leaked_password_protection` disabled | Supabase Dashboard → Authentication → Policies → toggle "Leaked Password Protection" ON (uses HaveIBeenPwned). |
 
 ### 15.2 Missing infra prerequisites
-- **Avatar bucket:** Supabase Storage → create bucket named `avatars`, public read, authenticated insert/update where `name LIKE auth.uid() || '/%'`. Profile photo upload (`app/(app)/profile/page.tsx` line ~54) silently fails until this exists.
+- ~~**Avatar bucket**~~ ✅ done (migration `0002_avatars_storage_bucket`).
 - **Google OAuth:** if you want the "Continue with Google" button on login to work, configure provider in Supabase Dashboard → Authentication → Providers → Google (need Google Cloud OAuth client ID + secret). Until then, login page's Google button errors silently.
 - **`favicon.ico`:** none in `public/`. Requests for `/favicon.ico` get caught by `[lang]` dynamic route and redirect to `/favicon.ico/lesson`. Cosmetic only. Drop a `favicon.ico` into `public/` to fix.
 
@@ -1212,13 +1221,16 @@ Then via MCP:
 - `mcp__046bf9d6...__list_deployments` (project `prj_lBk0xoEmDnd61CwYcYpiuTkpU0Oh`, team `team_XsI6YDbrRp6IYYIPGtfQTdmy`) — last deploy state
 
 ### 16.3 Recommended next sequence
-1. **Harden DB advisors** → write `supabase/migrations/0002_harden_rpcs.sql`, apply via MCP `apply_migration`, re-check `get_advisors`.
-2. **Create `avatars` Storage bucket** — via MCP SQL or dashboard.
-3. **Sync layer (S5 finish)** — outbox + last-write-wins. Required before any feature that mutates `lang_state` outside the existing RPCs.
-4. **Subcat unlock (S12)** — UI + new RPC `spend_unlock_token`.
-5. **Achievements engine (S19)** — table exists, need event hooks + unlock RPC.
-6. **PWA wiring (S23)** — likely switch from `next-pwa` to `@serwist/next` (next-pwa is Next 13/14 only).
-7. **Asset pass (S22)** — replace all emoji with proper SVG/SFX. Source from licence-free packs (Lucide, Heroicons, OpenGameArt).
+1. **Harden DB advisors (§15.1)** → migration `0003_harden_rpcs.sql` adding `SET search_path = ''` to all 8 RPCs + lock down `leaderboard_view`. Apply via MCP `apply_migration`. Re-run `get_advisors` to confirm clean.
+2. **Sync layer (S5 finish)** — outbox + last-write-wins. Required before any feature mutates `lang_state` outside existing RPCs.
+3. **Subcat unlock (S12)** — UI + new RPC `spend_unlock_token` (migration 0004).
+4. **Quests event hooks (S15 finish)** — wire `quest_state.progress` increments to quiz/chest/coin events.
+5. **Achievements engine (S19 finish)** — table exists, need event hooks + `unlock_achievement` RPC + toast notifications.
+6. **Daily challenge card (S18 finish)** + first-launch-of-day detection for `DailyLoginModal`.
+7. **PWA wiring (S23)** — switch from `next-pwa` (Next 13/14 only) to `@serwist/next`.
+8. **Asset pass (S22)** — replace all emoji with proper SVG/SFX. Source from licence-free packs (Lucide, Heroicons, OpenGameArt).
+9. **Google OAuth provider** + login button activation.
+10. **Single-session lock (S21)** — client realtime listener + conflict modal.
 
 ### 16.4 Conventions (also see §13)
 - Caveman mode is the user's preference for chat ("stop caveman" / "normal mode" toggles). Code, commits, security messages: write normal English.
