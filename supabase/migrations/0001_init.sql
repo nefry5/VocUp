@@ -519,6 +519,7 @@ DECLARE
   v_count int;
   v_boosters jsonb;
   v_until timestamptz := now() + interval '24 hours';
+  v_lang text;
 BEGIN
   SELECT * INTO v_profile FROM public.profiles WHERE id = v_user_id;
 
@@ -549,7 +550,7 @@ BEGIN
   WHERE id = v_user_id;
 
   -- Apply booster to all langs for this user
-  FOR v_lang IN SELECT unnest(ARRAY['en','de','es','it']) LOOP
+  FOREACH v_lang IN ARRAY ARRAY['en','de','es','it'] LOOP
     SELECT active_boosters INTO v_boosters FROM public.lang_state
     WHERE user_id = v_user_id AND lang = v_lang;
 
