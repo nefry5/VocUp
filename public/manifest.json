@@ -1,0 +1,23 @@
+{
+  "name": "VocUp — Apprenez le vocabulaire",
+  "short_name": "VocUp",
+  "description": "Application gamifiée pour apprendre le vocabulaire en anglais, allemand, espagnol et italien.",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#0e0920",
+  "theme_color": "#0e0920",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["education", "games"]
+}

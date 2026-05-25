@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Palette */
+  --bg: #0e0920;
+  --surface: #1c1e2a;
+  --text: #f2effb;
+  --action: #34d399;
+  --reward: #ef5778;
+
+  /* Score tiers */
+  --score-red: #ef4444;
+  --score-yellow: #facc15;
+  --score-green: #34d399;
+  --score-blue: #38bdf8;
+
+  /* Borders */
+  --border: #2d2f3f;
+  --border-subtle: #1e2030;
+
+  /* Surfaces */
+  --surface-2: #24263a;
+  --surface-3: #2c2e42;
+
+  /* Text variants */
+  --text-muted: #9b98b3;
+  --text-dim: #6e6a85;
+
+  /* Rank colors */
+  --rank-wood: #92400e;
+  --rank-bronze: #b45309;
+  --rank-silver: #94a3b8;
+  --rank-gold: #f59e0b;
+  --rank-diamond: #38bdf8;
+  --rank-platinum: #e879f9;
+  --rank-solar: #f97316;
+
+  /* Lang tints */
+  --lang-en: #ef4444;   /* red */
+  --lang-de: #f59e0b;   /* amber */
+  --lang-es: #34d399;   /* emerald */
+  --lang-it: #38bdf8;   /* sky */
+}
+
+/* Base resets */
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  overscroll-behavior: none;
+}
+
+/* Tabular nums for counters */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Card flip */
+.perspective {
+  perspective: 1000px;
+}
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
